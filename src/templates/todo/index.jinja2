@@ -1,0 +1,161 @@
+{% extends "base.jinja2" %} {% block content %}
+<div class="content">
+  <h1>
+    <span class="font-semi-bold">Pyramid</span>
+    <span class="smaller">ToDo App Sample</span>
+  </h1>
+  <div>
+    <b-alert :show="show" :variant='message.color'>[[ message.text ]]</b-alert>
+    <b-form @submit.prevent="onSubmitPost">
+      <b-form-group id="input-group-1" label="Title:" label-for="input-1">
+        <b-form-input
+          id="input-1"
+          v-model="form.title"
+          required
+          placeholder="Add Title"
+        ></b-form-input>
+      </b-form-group>
+      <b-form-group id="input-group-2" label="Task:" label-for="input-2">
+        <b-form-input
+          id="input-2"
+          v-model="form.task"
+          required
+          placeholder="Add task"
+        ></b-form-input>
+      </b-form-group>
+      <b-form-group id="input-group-3" label="Priority:" label-for="input-3">
+        <b-form-select
+          id="input-3"
+          v-model="form.priority"
+          :options="priorities"
+          required
+        ></b-form-select>
+      </b-form-group>
+
+      <b-button type="submit" variant="primary">Submit</b-button>
+    </b-form>
+  </div>
+  <div class="pt-5">
+    <div class="container text-center">
+      <div class="row">
+        <div class="col-md-1">
+          ID
+        </div>
+        <div class="col-md">
+          タイトル
+        </div>
+        <div class="col-md">タスク</div>
+        <div class="col-md-1">優先度</div>
+        <div class="col-md-1">編集</div>
+        <div class="col-md-1">削除</div>
+      </div>
+      <div
+        v-for="todo in todo_list"
+        :key="todo.id"
+        class="row mt-3 border-bottom"
+      >
+        <div class="col-md-1">
+          [[ todo.id ]]
+        </div>
+        <div class="col-md">
+          [[ todo.title ]]
+        </div>
+        <div class="col-md">
+          [[ todo.task ]]
+        </div>
+        <div class="col-md-1">
+          [[ todo.priority ]]
+        </div>
+        <div class="col-md-1 pb-md-2">
+          <b-button @click="onClickEdit" variant="info">Edit</b-button>
+        </div>
+        <div class="col-md-1 pb-md-2">
+          <b-button @click="onClickDelete(todo.id)" variant="danger">Delete</b-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %} {% block script %}
+<script src="{{ request.static_path('src:static/api.js') }}"></script>
+<script>
+  var app = new Vue({
+    el: "#app",
+    delimiters: ["[[", "]]"],
+    data() {
+      return {
+        message: {
+          text: "",
+          color: ""
+        },
+        show: false,
+        form: {
+          title: "",
+          task: "",
+          priority: null,
+        },
+        priorities: [
+          { text: "Priority", value: null },
+          { text: "高い", value: 1 },
+          { text: "低い", value: 2 },
+        ],
+        todo_list: "",
+      };
+    },
+    methods: {
+      async getApi(evt) {
+        api({
+          method: "get",
+          url: "/api/todo",
+        })
+          .then((response) => {
+            console.log(response);
+            this.todo_list = response.data.todo_list;
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      },
+      onSubmitPost(evt) {
+        api({
+          method: "post",
+          url: "/api/todo",
+          data: this.form,
+        })
+          .then((response) => {
+            this.show = true;
+            create_todo = response.data.create_todo;
+            this.message.text = `タスク ${create_todo.id}: ${create_todo.title} を追加しました`
+            this.message.color = "success"
+            this.getApi()
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      },
+      onClickEdit(evt) {},
+      onClickDelete(deleteTodoId) {
+        console.log(deleteTodoId)
+        api({
+          method: "delete",
+          url: "/api/todo",
+          data: deleteTodoId,
+        })
+          .then((response) => {
+            this.show = true;
+            delete_todo = response.data.delete_todo;
+            this.message.text = `${delete_todo.id}: ${delete_todo.title} を削除しました`
+            this.message.color = "danger"
+            this.getApi()
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      },
+    },
+    created: function () {
+      this.getApi();
+    },
+  });
+</script>
+{% endblock script %}
